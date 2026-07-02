@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useRef } from "react"
+import { SkuScanner } from "@/components/parts/SkuScanner"
+import { ScanBarcode } from "lucide-react"
 import type { Part } from "@/lib/types"
 
 interface Props {
@@ -11,6 +13,13 @@ interface Props {
 export function PartForm({ action, defaultValues }: Props) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [sku, setSku] = useState(defaultValues?.sku ?? "")
+
+  function handleScan(scannedSku: string) {
+    setScannerOpen(false)
+    setSku(scannedSku.trim().toUpperCase())
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -27,20 +36,31 @@ export function PartForm({ action, defaultValues }: Props) {
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-5 max-w-md">
       <div>
         <label className="block text-sm font-semibold text-[#1c1b1b] mb-1">
           SKU <span className="text-[#ba1a1a]">*</span>
         </label>
-        <p className="text-xs text-[#737688] mb-2">Unique product code (auto-uppercased).</p>
-        <input
-          name="sku"
-          required
-          placeholder="e.g. FILT-20X25"
-          defaultValue={defaultValues?.sku}
-          autoCapitalize="characters"
-          className="w-full h-14 px-4 rounded-lg border-2 border-[#e5e2e1] bg-white text-base text-[#1c1b1b] font-mono placeholder:text-[#737688] focus:outline-none focus:border-[#003ec7] transition-colors"
-        />
+        <p className="text-xs text-[#737688] mb-2">Scan the barcode or type the product code manually.</p>
+        <div className="flex gap-2">
+          <input
+            name="sku"
+            required
+            placeholder="e.g. FILT-20X25"
+            value={sku}
+            onChange={(e) => setSku(e.target.value.toUpperCase())}
+            autoCapitalize="characters"
+            className="flex-1 h-14 px-4 rounded-lg border-2 border-[#e5e2e1] bg-white text-base text-[#1c1b1b] font-mono placeholder:text-[#737688] focus:outline-none focus:border-[#003ec7] transition-colors"
+          />
+          <button
+            type="button"
+            onClick={() => setScannerOpen(true)}
+            className="h-14 px-4 rounded-lg border-2 border-[#e5e2e1] bg-white text-[#434656] hover:border-[#003ec7] hover:text-[#003ec7] transition-colors flex items-center gap-2 font-semibold text-sm"
+          >
+            <ScanBarcode size={18} />
+          </button>
+        </div>
       </div>
 
       <div>
@@ -86,5 +106,10 @@ export function PartForm({ action, defaultValues }: Props) {
         {isPending ? "Saving…" : "Save Part"}
       </button>
     </form>
+
+    {scannerOpen && (
+      <SkuScanner onScan={handleScan} onClose={() => setScannerOpen(false)} />
+    )}
+    </>
   )
 }

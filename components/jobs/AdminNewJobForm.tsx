@@ -207,20 +207,20 @@ export function AdminNewJobForm({ customers, techs, discountPct }: Props) {
           ))}
         </div>
 
-        <div className="mt-3 flex gap-4">
+        <div className="mt-3 grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={addLine}
-            className="flex items-center gap-2 text-sm font-semibold text-[#003ec7]"
+            className="flex items-center justify-center gap-2 h-11 rounded-xl border-2 border-[#e5e2e1] text-sm font-semibold text-[#434656] hover:border-[#003ec7] hover:text-[#003ec7] transition-colors"
           >
-            <Plus size={16} /> Add Line Item
+            <Plus size={16} /> Add Item
           </button>
           <button
             type="button"
             onClick={() => { setPartError(null); setScannerOpen(true) }}
-            className="flex items-center gap-2 text-sm font-semibold text-[#434656]"
+            className="flex items-center justify-center gap-2 h-11 rounded-xl border-2 border-[#003ec7] text-sm font-semibold text-[#003ec7] hover:bg-[#eff3ff] transition-colors"
           >
-            <ScanBarcode size={16} /> Add Part
+            <ScanBarcode size={16} /> Scan Part
           </button>
         </div>
 
