@@ -25,11 +25,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin" className="text-base font-bold text-[#003ec7]">
             Royal Repair — Admin
           </Link>
-          <form action={logout}>
-            <button type="submit" className="text-sm text-[#737688] font-semibold flex items-center gap-1">
-              <LogOut size={16} /> Sign Out
-            </button>
-          </form>
+          <div className="flex items-center gap-4">
+            <Link href="/jobs" className="text-xs font-semibold text-[#434656] bg-[#f0eded] px-3 py-1.5 rounded-lg hover:bg-[#e5e2e1] transition-colors">
+              Tech View
+            </Link>
+            <form action={logout}>
+              <button type="submit" className="text-sm text-[#737688] font-semibold flex items-center gap-1">
+                <LogOut size={16} /> Sign Out
+              </button>
+            </form>
+          </div>
         </div>
       </header>
       <div className="flex flex-1 max-w-5xl mx-auto w-full">

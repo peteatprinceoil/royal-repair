@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { generateCheckoutSession, sendPaymentEmail, cancelJob } from "@/lib/actions/jobs"
-import { QrCode, Mail, XCircle } from "lucide-react"
+import { generateCheckoutSession, sendPaymentEmail, cancelJob, switchPaymentType } from "@/lib/actions/jobs"
+import { QrCode, Mail, XCircle, RefreshCw } from "lucide-react"
 import type { JobStatus, PaymentType } from "@/lib/types"
 
 interface Props {
@@ -22,7 +23,9 @@ export function JobActions({ job }: Props) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [loadingQr, setLoadingQr] = useState(false)
   const [loadingEmail, setLoadingEmail] = useState(false)
+  const [loadingSwitch, setLoadingSwitch] = useState(false)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ""
+  const router = useRouter()
 
   async function handleGenerateQR() {
     setLoadingQr(true)
@@ -52,6 +55,20 @@ export function JobActions({ job }: Props) {
       }
     } finally {
       setLoadingEmail(false)
+    }
+  }
+
+  async function handleSwitch() {
+    const newType: PaymentType = job.payment_type === "onsite" ? "remote" : "onsite"
+    setLoadingSwitch(true)
+    try {
+      await switchPaymentType(job.id, newType)
+      setQrDataUrl(null)
+      router.refresh()
+    } catch {
+      toast.error("Failed to switch payment type.")
+    } finally {
+      setLoadingSwitch(false)
     }
   }
 
@@ -115,6 +132,19 @@ export function JobActions({ job }: Props) {
           Last sent {new Date(job.sent_at).toLocaleDateString()}
         </p>
       )}
+
+      <button
+        onClick={handleSwitch}
+        disabled={loadingSwitch}
+        className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border-2 border-[#e5e2e1] text-[#434656] font-semibold text-sm hover:border-[#003ec7] hover:text-[#003ec7] transition-colors disabled:opacity-60"
+      >
+        <RefreshCw size={16} />
+        {loadingSwitch
+          ? "Switching…"
+          : job.payment_type === "onsite"
+            ? "Switch to Email Payment"
+            : "Switch to On-Site Payment"}
+      </button>
 
       {job.status === "draft" && (
         <form

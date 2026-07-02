@@ -181,6 +181,49 @@ export async function sendPaymentEmail(jobId: string): Promise<{ success: boolea
   return { success: true }
 }
 
+export async function switchPaymentType(jobId: string, newType: PaymentType) {
+  "use server"
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/login")
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("subtotal, status")
+    .eq("id", jobId)
+    .single()
+
+  if (!job) throw new Error("Job not found")
+
+  let discountPct = 0
+  let discountAmount = 0
+  let total = job.subtotal
+
+  if (newType === "onsite") {
+    const { data: setting } = await supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "onsite_discount_pct")
+      .single()
+    discountPct = parseFloat(setting?.value ?? "0")
+    discountAmount = Math.round(job.subtotal * (discountPct / 100) * 100) / 100
+    total = Math.round((job.subtotal - discountAmount) * 100) / 100
+  }
+
+  await supabase
+    .from("jobs")
+    .update({
+      payment_type: newType,
+      discount_pct: discountPct,
+      discount_amount: discountAmount,
+      total,
+      stripe_checkout_session_id: null,
+    })
+    .eq("id", jobId)
+
+  revalidatePath(`/jobs/${jobId}`)
+}
+
 export async function cancelJob(jobId: string) {
   "use server"
   const supabase = await createClient()

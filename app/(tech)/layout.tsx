@@ -10,11 +10,12 @@ export default async function TechLayout({ children }: { children: React.ReactNo
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, role")
     .eq("id", user!.id)
     .single()
 
   const name = profile?.full_name || user?.email || "Tech"
+  const isAdmin = profile?.role === "admin"
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fcf9f8]">
@@ -24,7 +25,14 @@ export default async function TechLayout({ children }: { children: React.ReactNo
           <Link href="/jobs" className="text-base font-bold text-[#003ec7]">
             Royal Repair
           </Link>
-          <span className="text-sm text-[#434656] font-medium truncate max-w-[140px]">{name}</span>
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Link href="/admin" className="text-xs font-semibold text-[#003ec7] bg-[#eff3ff] px-3 py-1.5 rounded-lg hover:bg-[#dce6ff] transition-colors">
+                Admin View
+              </Link>
+            )}
+            <span className="text-sm text-[#434656] font-medium truncate max-w-[120px]">{name}</span>
+          </div>
         </div>
       </header>
 
