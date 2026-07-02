@@ -24,27 +24,26 @@ export function SkuScanner({ onScan, onClose }: Props) {
     setCameraError(null)
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
-      const scanner = new Html5Qrcode("sku-scanner-region")
+      const scanner = new Html5Qrcode("sku-scanner-region", {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.ITF,
+        ],
+        verbose: false,
+      })
       scannerRef.current = scanner
       setScanning(true)
 
       await scanner.start(
         { facingMode: "environment" },
-        {
-          fps: 15,
-          qrbox: { width: 280, height: 120 },
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.QR_CODE,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.CODE_93,
-            Html5QrcodeSupportedFormats.ITF,
-          ],
-        },
+        { fps: 15, qrbox: { width: 280, height: 120 } },
         (decodedText: string) => {
           scanner.stop().catch(() => {})
           setScanning(false)
