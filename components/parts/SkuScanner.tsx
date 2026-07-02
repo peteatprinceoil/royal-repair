@@ -23,14 +23,28 @@ export function SkuScanner({ onScan, onClose }: Props) {
   async function startCamera() {
     setCameraError(null)
     try {
-      const { Html5Qrcode } = await import("html5-qrcode")
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
       const scanner = new Html5Qrcode("sku-scanner-region")
       scannerRef.current = scanner
       setScanning(true)
 
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 240, height: 100 } },
+        {
+          fps: 15,
+          qrbox: { width: 280, height: 120 },
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.CODE_93,
+            Html5QrcodeSupportedFormats.ITF,
+          ],
+        },
         (decodedText: string) => {
           scanner.stop().catch(() => {})
           setScanning(false)
@@ -74,6 +88,11 @@ export function SkuScanner({ onScan, onClose }: Props) {
         </div>
 
         <div id="sku-scanner-region" className="w-full overflow-hidden rounded-xl" />
+        {scanning && (
+          <p className="text-xs text-center text-[#737688]">
+            Hold the barcode steady inside the box — works with UPC, EAN, QR, Code 128 and more
+          </p>
+        )}
 
         {cameraError && (
           <p className="text-sm text-[#ba1a1a] bg-[#fef2f2] border border-[#fecaca] rounded-lg px-4 py-2">
