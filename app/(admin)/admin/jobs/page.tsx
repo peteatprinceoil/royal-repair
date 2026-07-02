@@ -1,13 +1,14 @@
 import { createClient } from "@/lib/supabase/server"
 import { StatusBadge } from "@/components/jobs/StatusBadge"
 import Link from "next/link"
+import { Plus } from "lucide-react"
 
 export default async function AdminJobsPage() {
   const supabase = await createClient()
 
   const { data: jobs } = await supabase
     .from("jobs")
-    .select("*, customers(name), profiles(full_name)")
+    .select("*, customers(name), profiles!jobs_created_by_fkey(full_name)")
     .order("created_at", { ascending: false })
 
   const all = jobs ?? []
@@ -16,7 +17,15 @@ export default async function AdminJobsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-[24px] font-bold text-[#1c1b1b]">All Jobs</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-[24px] font-bold text-[#1c1b1b]">All Jobs</h1>
+        <Link
+          href="/admin/jobs/new"
+          className="flex items-center gap-2 h-10 px-4 rounded-lg bg-[#003ec7] text-white font-semibold text-sm"
+        >
+          <Plus size={16} /> New Job
+        </Link>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white border-2 border-[#e5e2e1] rounded-xl p-4">

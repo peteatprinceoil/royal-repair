@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
-import { createJob } from "@/lib/actions/jobs"
+import { createJobAsAdmin } from "@/lib/actions/jobs"
 import { getPartBySku } from "@/lib/actions/parts"
 import { SkuScanner } from "@/components/parts/SkuScanner"
 import { Plus, Trash2, ScanBarcode } from "lucide-react"
@@ -10,12 +9,11 @@ import type { LineItem } from "@/lib/types"
 
 interface Props {
   customers: { id: string; name: string; service_address: string }[]
-  defaultCustomerId?: string
+  techs: { id: string; full_name: string }[]
   discountPct: number
 }
 
-export function NewJobForm({ customers, defaultCustomerId, discountPct }: Props) {
-  const router = useRouter()
+export function AdminNewJobForm({ customers, techs, discountPct }: Props) {
   const [isPending, startTransition] = useTransition()
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { description: "", quantity: 1, unit_price: 0 },
@@ -38,10 +36,7 @@ export function NewJobForm({ customers, defaultCustomerId, discountPct }: Props)
   }
 
   function updateLine(i: number, field: keyof LineItem, value: string | number) {
-    const updated = lineItems.map((item, idx) =>
-      idx === i ? { ...item, [field]: value } : item
-    )
-    setLineItems(updated)
+    setLineItems(lineItems.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
   }
 
   async function handlePartScan(sku: string) {
@@ -58,13 +53,14 @@ export function NewJobForm({ customers, defaultCustomerId, discountPct }: Props)
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setError(null)
     const fd = new FormData(e.currentTarget)
     fd.set("line_items", JSON.stringify(lineItems))
     fd.set("payment_type", paymentType)
 
     startTransition(async () => {
       try {
-        await createJob(fd)
+        await createJobAsAdmin(fd)
       } catch (err) {
         setError("Failed to create job. Please try again.")
       }
@@ -82,15 +78,15 @@ export function NewJobForm({ customers, defaultCustomerId, discountPct }: Props)
         {customers.length === 0 ? (
           <div className="rounded-xl border-2 border-dashed border-[#e5e2e1] p-6 text-center">
             <p className="text-sm text-[#737688]">No customers yet.</p>
-            <a href="/customers/new" className="text-sm font-semibold text-[#003ec7] mt-1 inline-block">
-              Add a customer first →
+            <a href="/admin/customers" className="text-sm font-semibold text-[#003ec7] mt-1 inline-block">
+              View customers →
             </a>
           </div>
         ) : (
           <select
             name="customer_id"
-            defaultValue={defaultCustomerId ?? ""}
             required
+            defaultValue=""
             className="w-full h-14 px-4 rounded-lg border-2 border-[#e5e2e1] bg-white text-base text-[#1c1b1b] focus:outline-none focus:border-[#003ec7] transition-colors"
           >
             <option value="" disabled>Select a customer…</option>
@@ -99,6 +95,24 @@ export function NewJobForm({ customers, defaultCustomerId, discountPct }: Props)
             ))}
           </select>
         )}
+      </div>
+
+      {/* Assign to tech */}
+      <div>
+        <label className="block text-sm font-semibold text-[#1c1b1b] mb-1">
+          Assign to Tech
+          <span className="ml-1 text-xs font-normal text-[#737688]">(optional)</span>
+        </label>
+        <select
+          name="assigned_to"
+          defaultValue=""
+          className="w-full h-14 px-4 rounded-lg border-2 border-[#e5e2e1] bg-white text-base text-[#1c1b1b] focus:outline-none focus:border-[#003ec7] transition-colors"
+        >
+          <option value="">Unassigned (visible to all techs)</option>
+          {techs.map((t) => (
+            <option key={t.id} value={t.id}>{t.full_name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Job title */}
@@ -246,7 +260,7 @@ export function NewJobForm({ customers, defaultCustomerId, discountPct }: Props)
         disabled={isPending || customers.length === 0}
         className="w-full h-14 rounded-xl bg-[#003ec7] text-white font-bold text-base disabled:opacity-60 transition-colors hover:bg-[#0033a8]"
       >
-        {isPending ? "Creating…" : "Create Charge"}
+        {isPending ? "Creating…" : "Create Job"}
       </button>
     </form>
 

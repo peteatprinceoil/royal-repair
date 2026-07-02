@@ -26,10 +26,20 @@ export interface LineItem {
   unit_price: number
 }
 
+export interface Part {
+  id: string
+  sku: string
+  name: string
+  unit_price: number
+  created_at: string
+  updated_at: string
+}
+
 export interface Job {
   id: string
   customer_id: string
   created_by: string
+  assigned_to: string | null
   title: string
   line_items: LineItem[]
   subtotal: number

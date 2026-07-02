@@ -232,3 +232,55 @@ export async function cancelJob(jobId: string) {
   revalidatePath("/jobs")
   redirect("/jobs")
 }
+
+export async function createJobAsAdmin(formData: FormData) {
+  "use server"
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/login")
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+  if (profile?.role !== "admin") throw new Error("Forbidden")
+
+  const customerId = formData.get("customer_id") as string
+  const title = (formData.get("title") as string).trim()
+  const paymentType = formData.get("payment_type") as PaymentType
+  const lineItemsRaw = formData.get("line_items") as string
+  const lineItems: LineItem[] = JSON.parse(lineItemsRaw)
+  const assignedToRaw = formData.get("assigned_to") as string
+  const assignedTo = assignedToRaw?.trim() || null
+
+  const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0)
+
+  let discountPct = 0
+  if (paymentType === "onsite") {
+    const { data: setting } = await supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "onsite_discount_pct")
+      .single()
+    discountPct = parseFloat(setting?.value ?? "0")
+  }
+
+  const discountAmount = Math.round(subtotal * (discountPct / 100) * 100) / 100
+  const total = Math.round((subtotal - discountAmount) * 100) / 100
+
+  const { error } = await supabase.from("jobs").insert({
+    customer_id: customerId,
+    created_by: user.id,
+    assigned_to: assignedTo,
+    title,
+    line_items: lineItems,
+    subtotal,
+    discount_pct: discountPct,
+    discount_amount: discountAmount,
+    total,
+    payment_type: paymentType,
+    status: "draft",
+  })
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath("/admin/jobs")
+  redirect("/admin/jobs")
+}

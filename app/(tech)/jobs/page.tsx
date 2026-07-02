@@ -10,8 +10,8 @@ export default async function JobsPage() {
 
   const { data: jobs } = await supabase
     .from("jobs")
-    .select("*, customers(name, service_address), profiles(full_name)")
-    .eq("created_by", user!.id)
+    .select("*, customers(name, service_address), profiles!jobs_created_by_fkey(full_name)")
+    .or(`created_by.eq.${user!.id},assigned_to.eq.${user!.id},assigned_to.is.null`)
     .order("created_at", { ascending: false })
 
   const outstanding = (jobs ?? [])
@@ -45,27 +45,43 @@ export default async function JobsPage() {
             <p className="text-sm mt-1">Create your first charge above</p>
           </div>
         )}
-        {(jobs as JobWithCustomer[])?.map((job) => (
-          <Link
-            key={job.id}
-            href={`/jobs/${job.id}`}
-            className="block bg-white border-2 border-[#e5e2e1] rounded-xl p-4 hover:border-[#003ec7] transition-colors"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-semibold text-[#1c1b1b] truncate">{job.customers?.name}</p>
-                <p className="text-sm text-[#434656] truncate">{job.title || "No title"}</p>
-                <p className="text-xs text-[#737688] mt-1 truncate">{job.customers?.service_address}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-[18px] font-bold text-[#1c1b1b]">${job.total.toFixed(2)}</p>
-                <div className="mt-1">
-                  <StatusBadge status={job.status} />
+        {(jobs as JobWithCustomer[])?.map((job) => {
+          const isAssigned = job.assigned_to === user!.id && job.created_by !== user!.id
+          const isUnassigned = !job.assigned_to && job.created_by !== user!.id
+          return (
+            <Link
+              key={job.id}
+              href={`/jobs/${job.id}`}
+              className="block bg-white border-2 border-[#e5e2e1] rounded-xl p-4 hover:border-[#003ec7] transition-colors"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-[#1c1b1b] truncate">{job.customers?.name}</p>
+                    {isAssigned && (
+                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest bg-[#eff3ff] text-[#003ec7] px-2 py-0.5 rounded-full">
+                        Assigned
+                      </span>
+                    )}
+                    {isUnassigned && (
+                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest bg-[#f0eded] text-[#737688] px-2 py-0.5 rounded-full">
+                        Open
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-[#434656] truncate">{job.title || "No title"}</p>
+                  <p className="text-xs text-[#737688] mt-1 truncate">{job.customers?.service_address}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[18px] font-bold text-[#1c1b1b]">${job.total.toFixed(2)}</p>
+                  <div className="mt-1">
+                    <StatusBadge status={job.status} />
+                  </div>
                 </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          )
+        })}
       </div>
     </div>
   )

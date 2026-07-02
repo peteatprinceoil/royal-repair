@@ -2,12 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, Briefcase, Users, Download, Settings } from "lucide-react"
+import { BarChart3, Briefcase, Users, Download, Settings, Package, UserPlus } from "lucide-react"
 
 const navItems = [
   { href: "/admin", icon: BarChart3, label: "Dashboard", mobileLabel: "Dash", exact: true },
   { href: "/admin/jobs", icon: Briefcase, label: "All Jobs", mobileLabel: "Jobs" },
   { href: "/admin/customers", icon: Users, label: "Customers", mobileLabel: "Customers" },
+  { href: "/admin/parts", icon: Package, label: "Parts", mobileLabel: "Parts" },
+  { href: "/admin/users", icon: UserPlus, label: "Team", mobileLabel: "Team" },
   { href: "/admin/export", icon: Download, label: "Export", mobileLabel: "Export" },
   { href: "/admin/settings", icon: Settings, label: "Settings", mobileLabel: "Settings" },
 ]

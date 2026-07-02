@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Briefcase, Users } from "lucide-react"
+import { Briefcase, Users, Package } from "lucide-react"
 
 export function TechNav() {
   const pathname = usePathname()
@@ -11,6 +11,7 @@ export function TechNav() {
     <>
       <NavItem href="/jobs" icon={<Briefcase size={24} />} label="Jobs" active={pathname.startsWith("/jobs")} />
       <NavItem href="/customers" icon={<Users size={24} />} label="Customers" active={pathname.startsWith("/customers")} />
+      <NavItem href="/parts" icon={<Package size={24} />} label="Parts" active={pathname.startsWith("/parts")} />
     </>
   )
 }
