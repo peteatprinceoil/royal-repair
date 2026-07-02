@@ -11,19 +11,39 @@ interface Props {
 export function SkuScanner({ onScan, onClose }: Props) {
   const scannerRef = useRef<any>(null)
   const [scanning, setScanning] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [manualSku, setManualSku] = useState("")
   const [cameraError, setCameraError] = useState<string | null>(null)
 
   useEffect(() => {
     return () => {
-      scannerRef.current?.stop().catch(() => {})
+      try {
+        scannerRef.current?.stop()
+      } catch {}
     }
   }, [])
 
   async function startCamera() {
     setCameraError(null)
+    setLoading(true)
+
     try {
-      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
+      const mod = await import("html5-qrcode").catch(() => null)
+      if (!mod) {
+        setCameraError("Scanner failed to load. Enter SKU manually.")
+        setLoading(false)
+        return
+      }
+
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = mod
+
+      const el = document.getElementById("sku-scanner-region")
+      if (!el) {
+        setCameraError("Scanner region not found. Enter SKU manually.")
+        setLoading(false)
+        return
+      }
+
       const scanner = new Html5Qrcode("sku-scanner-region", {
         formatsToSupport: [
           Html5QrcodeSupportedFormats.QR_CODE,
@@ -38,27 +58,40 @@ export function SkuScanner({ onScan, onClose }: Props) {
         ],
         verbose: false,
       })
+
       scannerRef.current = scanner
+      setLoading(false)
       setScanning(true)
 
       await scanner.start(
         { facingMode: "environment" },
         { fps: 15, qrbox: { width: 280, height: 120 } },
         (decodedText: string) => {
-          scanner.stop().catch(() => {})
+          try { scanner.stop() } catch {}
           setScanning(false)
           onScan(decodedText)
         },
         () => {}
       )
-    } catch {
+    } catch (err: any) {
+      setLoading(false)
       setScanning(false)
-      setCameraError("Camera not available. Enter SKU manually.")
+      try { scannerRef.current?.stop() } catch {}
+      scannerRef.current = null
+
+      const msg = String(err?.message ?? err ?? "")
+      if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("denied")) {
+        setCameraError("Camera permission denied. Allow camera access in your browser settings, or enter the SKU manually.")
+      } else if (msg.toLowerCase().includes("https") || msg.toLowerCase().includes("secure")) {
+        setCameraError("Camera requires a secure (HTTPS) connection. Enter SKU manually.")
+      } else {
+        setCameraError("Camera unavailable. Enter SKU manually below.")
+      }
     }
   }
 
   function stopCamera() {
-    scannerRef.current?.stop().catch(() => {})
+    try { scannerRef.current?.stop() } catch {}
     scannerRef.current = null
     setScanning(false)
   }
@@ -76,7 +109,7 @@ export function SkuScanner({ onScan, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={handleClose}>
       <div
-        className="w-full bg-white rounded-t-2xl p-6 space-y-4"
+        className="w-full bg-white rounded-t-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -86,20 +119,26 @@ export function SkuScanner({ onScan, onClose }: Props) {
           </button>
         </div>
 
+        {/* Camera preview area */}
         <div id="sku-scanner-region" className="w-full overflow-hidden rounded-xl" />
+
         {scanning && (
           <p className="text-xs text-center text-[#737688]">
-            Hold the barcode steady inside the box — works with UPC, EAN, QR, Code 128 and more
+            Hold the barcode steady inside the box — supports UPC, EAN, QR, Code 128 and more
           </p>
         )}
 
         {cameraError && (
-          <p className="text-sm text-[#ba1a1a] bg-[#fef2f2] border border-[#fecaca] rounded-lg px-4 py-2">
+          <p className="text-sm text-[#ba1a1a] bg-[#fef2f2] border border-[#fecaca] rounded-lg px-4 py-3">
             {cameraError}
           </p>
         )}
 
-        {!scanning ? (
+        {loading ? (
+          <div className="w-full h-12 rounded-xl border-2 border-[#e5e2e1] flex items-center justify-center text-sm text-[#737688]">
+            Starting camera…
+          </div>
+        ) : !scanning ? (
           <button
             type="button"
             onClick={startCamera}
