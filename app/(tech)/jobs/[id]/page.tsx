@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { StatusBadge } from "@/components/jobs/StatusBadge"
 import { JobActions } from "@/components/jobs/JobActions"
 import { BackButton } from "@/components/BackButton"
+import { EditCustomerSheet } from "@/components/customers/EditCustomerSheet"
 import type { LineItem } from "@/lib/types"
 
 export default async function JobDetailPage({
@@ -80,7 +81,13 @@ export default async function JobDetailPage({
 
       {/* Customer info */}
       <div className="bg-white border-2 border-[#e5e2e1] rounded-xl p-5">
-        <p className="text-xs font-semibold text-[#737688] uppercase tracking-widest mb-3">Customer</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-[#737688] uppercase tracking-widest">Customer</p>
+          <EditCustomerSheet
+            customer={{ id: job.customer_id, ...customer }}
+            jobId={job.id}
+          />
+        </div>
         <p className="font-semibold text-[#1c1b1b]">{customer.name}</p>
         <p className="text-sm text-[#434656]">{customer.service_address}</p>
         <p className="text-sm text-[#434656]">{customer.phone}</p>

@@ -13,7 +13,7 @@ const CustomerSchema = z.object({
 })
 
 export type CustomerState =
-  | { errors?: { name?: string[]; phone?: string[]; email?: string[]; service_address?: string[] }; message?: string }
+  | { errors?: { name?: string[]; phone?: string[]; email?: string[]; service_address?: string[] }; message?: string; success?: boolean }
   | undefined
 
 export async function createCustomer(state: CustomerState, formData: FormData): Promise<CustomerState> {
@@ -75,4 +75,35 @@ export async function updateCustomer(
   revalidatePath(`/customers/${id}`)
   revalidatePath("/customers")
   redirect(`/customers/${id}`)
+}
+
+export async function updateCustomerFromJob(
+  customerId: string,
+  jobId: string,
+  state: CustomerState,
+  formData: FormData
+): Promise<CustomerState> {
+  const result = CustomerSchema.safeParse({
+    name: formData.get("name"),
+    phone: formData.get("phone"),
+    email: formData.get("email"),
+    service_address: formData.get("service_address"),
+  })
+
+  if (!result.success) {
+    return { errors: result.error.flatten().fieldErrors as NonNullable<CustomerState>["errors"] }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from("customers")
+    .update(result.data)
+    .eq("id", customerId)
+
+  if (error) return { message: "Failed to update customer." }
+
+  revalidatePath(`/jobs/${jobId}`)
+  revalidatePath(`/customers/${customerId}`)
+  revalidatePath("/customers")
+  return { success: true }
 }
