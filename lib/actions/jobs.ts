@@ -5,9 +5,17 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { stripe } from "@/lib/stripe"
 import { Resend } from "resend"
+import twilio from "twilio"
 import type { LineItem, PaymentType } from "@/lib/types"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+function toE164(phone: string): string {
+  const digits = phone.replace(/\D/g, "")
+  if (digits.length === 10) return `+1${digits}`
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`
+  return `+${digits}`
+}
 
 export async function createJob(formData: FormData) {
   "use server"
@@ -170,6 +178,41 @@ export async function sendPaymentEmail(jobId: string): Promise<{ success: boolea
         </p>
       </div>
     `,
+  })
+
+  await supabase
+    .from("jobs")
+    .update({ sent_at: new Date().toISOString() })
+    .eq("id", jobId)
+
+  revalidatePath(`/jobs/${jobId}`)
+  return { success: true }
+}
+
+export async function sendPaymentText(jobId: string): Promise<{ success: boolean; error?: string }> {
+  "use server"
+  const supabase = await createClient()
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("*, customers(name, phone)")
+    .eq("id", jobId)
+    .single()
+
+  if (!job) return { success: false, error: "Job not found" }
+
+  const customer = job.customers as { name: string; phone: string }
+  if (!customer.phone) return { success: false, error: "Customer has no phone number on file" }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL!
+  const payUrl = `${appUrl}/pay/${job.payment_token}`
+  const firstName = customer.name.split(" ")[0]
+
+  const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  await client.messages.create({
+    body: `Hi ${firstName}, your Royal Repair invoice is ready — $${job.total.toFixed(2)}. Pay here: ${payUrl}`,
+    from: process.env.TWILIO_PHONE_NUMBER,
+    to: toE164(customer.phone),
   })
 
   await supabase

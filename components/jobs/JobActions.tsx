@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { generateCheckoutSession, sendPaymentEmail, cancelJob, switchPaymentType } from "@/lib/actions/jobs"
-import { QrCode, Mail, XCircle, RefreshCw } from "lucide-react"
+import { generateCheckoutSession, sendPaymentEmail, sendPaymentText, cancelJob, switchPaymentType } from "@/lib/actions/jobs"
+import { QrCode, Mail, MessageSquare, XCircle, RefreshCw } from "lucide-react"
 import type { JobStatus, PaymentType } from "@/lib/types"
 
 interface Props {
@@ -23,6 +23,7 @@ export function JobActions({ job }: Props) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [loadingQr, setLoadingQr] = useState(false)
   const [loadingEmail, setLoadingEmail] = useState(false)
+  const [loadingText, setLoadingText] = useState(false)
   const [loadingSwitch, setLoadingSwitch] = useState(false)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ""
   const router = useRouter()
@@ -41,6 +42,20 @@ export function JobActions({ job }: Props) {
       toast.error("Failed to generate QR code.")
     } finally {
       setLoadingQr(false)
+    }
+  }
+
+  async function handleSendText() {
+    setLoadingText(true)
+    try {
+      const result = await sendPaymentText(job.id)
+      if (result.success) {
+        toast.success("Payment text sent!")
+      } else {
+        toast.error(result.error ?? "Failed to send text.")
+      }
+    } finally {
+      setLoadingText(false)
     }
   }
 
@@ -117,19 +132,29 @@ export function JobActions({ job }: Props) {
           )}
         </>
       ) : (
-        <button
-          onClick={handleSendEmail}
-          disabled={loadingEmail}
-          className="flex items-center justify-center gap-2 w-full h-14 rounded-xl bg-[#003ec7] text-white font-bold text-base disabled:opacity-60"
-        >
-          <Mail size={20} />
-          {loadingEmail ? "Sending…" : job.sent_at ? "Resend Payment Email" : "Send Payment Email"}
-        </button>
+        <div className="space-y-3">
+          <button
+            onClick={handleSendText}
+            disabled={loadingText}
+            className="flex items-center justify-center gap-2 w-full h-14 rounded-xl bg-[#003ec7] text-white font-bold text-base disabled:opacity-60"
+          >
+            <MessageSquare size={20} />
+            {loadingText ? "Sending…" : job.sent_at ? "Resend Payment Text" : "Send Payment Text"}
+          </button>
+          <button
+            onClick={handleSendEmail}
+            disabled={loadingEmail}
+            className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border-2 border-[#e5e2e1] text-[#434656] font-semibold text-sm hover:border-[#003ec7] hover:text-[#003ec7] transition-colors disabled:opacity-60"
+          >
+            <Mail size={16} />
+            {loadingEmail ? "Sending…" : "Send via Email Instead"}
+          </button>
+        </div>
       )}
 
       {job.sent_at && (
         <p className="text-xs text-center text-[#737688]">
-          Last sent {new Date(job.sent_at).toLocaleDateString()}
+          Last sent {new Date(job.sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
         </p>
       )}
 
