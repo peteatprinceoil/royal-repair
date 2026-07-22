@@ -208,7 +208,9 @@ export async function sendPaymentText(jobId: string): Promise<{ success: boolean
   const payUrl = `${appUrl}/pay/${job.payment_token}`
   const firstName = customer.name.split(" ")[0]
 
-  const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  const client = twilio(process.env.TWILIO_API_KEY_SID, process.env.TWILIO_API_KEY_SECRET, {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+  })
   await client.messages.create({
     body: `Hi ${firstName}, your Royal Repair invoice is ready — $${job.total.toFixed(2)}. Pay here: ${payUrl}`,
     from: process.env.TWILIO_PHONE_NUMBER,
